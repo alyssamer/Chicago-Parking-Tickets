@@ -115,21 +115,8 @@ query = """SELECT vehicle_make, COUNT(*) as count
 ##################################################
 ########### sampling data for more eda & modeling
 
-### around 5% of all data for eda and modeling 
-if os.path.exists("data/sample.csv"):
-    tik = pd.read_csv("data/sample.csv")
-else:
-    query = """
-        SELECT target, ticket_queue, violation_description, zipcode,
-                license_plate_state, vehicle_make, fine_level1_amount, fine_level2_amount,
-                hour, month, year, notice_level, community_area_name
-        FROM tickets
-        WHERE ticket_queue != 'Hearing Req'
-        AND RANDOM() < 0.5;"""
-    ### selects rows based on random value
-    tik = pd.read_sql(query, conn)
-    tik.to_csv("data/sample.csv", index = False)
-
+### around 7% of all data for eda and modeling 
+tik = pd.read_sql("SELECT * FROM tickets_sample;", conn)
 
 
 

@@ -65,16 +65,23 @@ WHERE zipcode = '000000000' OR zipcode !~ '[0-9]';
 --- sample for modeling ---
 --- 7% ---
 
+CREATE TABLE tickets_sample AS
 SELECT target, ticket_queue, violation_description, zipcode,
                 license_plate_state, vehicle_make, fine_level1_amount, fine_level2_amount,
                 hour, month, year, notice_level, community_area_name
 FROM tickets
-WHERE ticket_queue != 'Hearing Req' AND RANDOM() < 0.7
-END;
+WHERE year BETWEEN 2000 AND 2018 
+AND ticket_queue != 'Hearing Req' AND RANDOM() < 0.07;
 
 
 
-
+--------------------------------
+--- sample from one full year --- 
+CREATE TABLE tickets_2017 AS
+SELECT *
+FROM tickets
+WHERE year = 2017
+AND ticket_queue != 'Hearing Req';
 
 
 
