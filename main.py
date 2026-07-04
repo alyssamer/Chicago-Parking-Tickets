@@ -35,7 +35,6 @@ conn = psycopg2.connect(
 ########### viewing all data
 
 ### looking at ticket queue for potential classification (paid vs dismissed vs unpaid)
-
 if os.path.exists("data/ticket_queue_counts.csv"):
     count = pd.read_csv("data/ticket_queue_counts.csv")
 else:
@@ -83,7 +82,9 @@ else:
 # 5         VIOL  8461543
 
 
-### cleaning some nulls on relevant columns
+##### cleaned in postgres after this 
+
+### checking nulls on relevant columns
 query = """ SELECT 
                 COUNT(*) FILTER (WHERE zipcode IS NULL OR zipcode = '00000000') as bad_zips,
                 COUNT(*) FILTER (WHERE community_area_name IS NULL) as null_area,
@@ -92,26 +93,20 @@ query = """ SELECT
                 COUNT(*) FILTER (WHERE ticket_queue IS NULL OR ticket_queue = '') as null_queue
             FROM tickets;"""
 
-# null_count  = pd.read_sql(query, conn)
-
 #    bad_zips  null_area  null_make  null_fine  null_queue
 # 0         8    4531936          0          0           0
 
 
-### double checking none of them are unknown 
+### double checking none of them are unknown, fixing in sample  
 query = """SELECT vehicle_make, COUNT(*) as count
             FROM tickets
             GROUP BY vehicle_make
             ORDER BY count ASC
             LIMIT 30;"""
 
-# car_make  = pd.read_sql(query, conn)
 
-
-### fixing zips - invalid to null
-query = """UPDATE tickets 
-            SET zipcode = NULL 
-            WHERE zipcode = '000000000' OR zipcode !~ '[0-9]' """
+### cleaned invalid zipcodes
+### grouped target variable for classification
 
 
 
@@ -120,35 +115,27 @@ query = """UPDATE tickets
 ##################################################
 ########### sampling data for more eda & modeling
 
-### around %5 of all data for eda and modeling 
+### around 5% of all data for eda and modeling 
 if os.path.exists("data/sample.csv"):
     tik = pd.read_csv("data/sample.csv")
 else:
     query = """
-        SELECT ticket_queue, violation_description, zipcode,
+        SELECT target, ticket_queue, violation_description, zipcode,
                 license_plate_state, vehicle_make, fine_level1_amount, fine_level2_amount,
                 hour, month, year, notice_level, community_area_name
         FROM tickets
         WHERE ticket_queue != 'Hearing Req'
-        AND RANDOM() < 0.05;"""
-    ### selects around 5% of rows based on random value
+        AND RANDOM() < 0.5;"""
+    ### selects rows based on random value
     tik = pd.read_sql(query, conn)
-    tik.to_csv("data/sample.csv", index=False)
+    tik.to_csv("data/sample.csv", index = False)
 
 
 
-### grouping target variable for classification
-def classify_queue(status):
-    if status == 'Paid':
-        return 'Paid'
-    elif status == 'Dismissed':
-        return 'Dismissed'
-    else:
-        return 'Unpaid'
 
-tik['target'] = tik['ticket_queue'].apply(classify_queue)
 
-# lots of mispelled looking makes and numbers 
+
+# fixing lots of mispelled looking makes and numbers 
 make_counts = tik['vehicle_make'].value_counts()
 rare_makes = make_counts[make_counts < 50].index
 tik['vehicle_make'] = tik['vehicle_make'].replace(rare_makes, 'OTHER')

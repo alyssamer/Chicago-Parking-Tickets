@@ -1,4 +1,5 @@
-
+--------------------------------
+--- main tickets table --- 
 CREATE TABLE tickets (
     ticket_number VARCHAR,
     issue_date TIMESTAMP,
@@ -37,3 +38,47 @@ CREATE TABLE tickets (
     geocoded_lng NUMERIC,
     geocoded_lat NUMERIC
 );
+	
+
+--- target variable --- 
+ALTER TABLE tickets ADD COLUMN target VARCHAR;
+
+UPDATE tickets
+SET target = CASE
+    WHEN ticket_queue = 'Paid' THEN 'Paid'
+    WHEN ticket_queue = 'Dismissed' THEN 'Dismissed'
+    ELSE 'Unpaid';
+
+
+--- cleaning ! ---
+--- null or non-numeric zips ---
+UPDATE tickets 
+SET zipcode = NULL
+WHERE zipcode = '000000000' OR zipcode !~ '[0-9]';
+
+
+
+
+
+
+--------------------------------
+--- sample for modeling ---
+--- 7% ---
+
+SELECT target, ticket_queue, violation_description, zipcode,
+                license_plate_state, vehicle_make, fine_level1_amount, fine_level2_amount,
+                hour, month, year, notice_level, community_area_name
+FROM tickets
+WHERE ticket_queue != 'Hearing Req' AND RANDOM() < 0.7
+END;
+
+
+
+
+
+
+
+
+
+
+

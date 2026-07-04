@@ -12,20 +12,15 @@ There were 3 classes which were imbalanced, as majority of tickets were paid, so
 Todo: Rerun with balanced class weights 
 
 
-Decision Tree F1: 
- 0.4728
+Decision Tree F1: 0.4728
 
-Random Forest F1:
- 0.7106
+Random Forest F1: 0.7106
 
-SVM F1:          
- 0.5123
+SVM F1: 0.5123
 
-KNN F1:          
- 0.6601
+KNN F1: 0.6601
 
-Naive Bayes F1:  
- 0.5711
+Naive Bayes F1: 0.5711
 
 
 
