@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 import sklearn as sk
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import f1_score, confusion_matrix
 from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import SGDClassifier
 from sklearn.neighbors import KNeighborsClassifier 
 from sklearn.naive_bayes import GaussianNB
+from sklearn.utils.class_weight import compute_sample_weight
 import seaborn as sns
 
 
@@ -84,26 +84,13 @@ else:
 
 ##### cleaned in postgres after this 
 
-### checking nulls on relevant columns
-query = """ SELECT 
-                COUNT(*) FILTER (WHERE zipcode IS NULL OR zipcode = '00000000') as bad_zips,
-                COUNT(*) FILTER (WHERE community_area_name IS NULL) as null_area,
-                COUNT(*) FILTER (WHERE vehicle_make IS NULL) as null_make,
-                COUNT(*) FILTER (WHERE fine_level1_amount IS NULL) as null_fine,
-                COUNT(*) FILTER (WHERE ticket_queue IS NULL OR ticket_queue = '') as null_queue
-            FROM tickets;"""
-
+### checking nulls/invalid values on relevant columns
 #    bad_zips  null_area  null_make  null_fine  null_queue
 # 0         8    4531936          0          0           0
 
 
-### double checking none of them are unknown, fixing in sample  
-query = """SELECT vehicle_make, COUNT(*) as count
-            FROM tickets
-            GROUP BY vehicle_make
-            ORDER BY count ASC
-            LIMIT 30;"""
-
+### double checked no cars are unknown
+# ^ many were mispelled or 'rare', grouped as OTHER in sample
 
 ### cleaned invalid zipcodes
 ### grouped target variable for classification
@@ -232,25 +219,17 @@ x_test = scaler.transform(x_test)
 
 
 ##################################################
-### try to balance class weights later
-
-### decision tree 
-dtree = DecisionTreeClassifier(max_depth = 2, random_state = 0)
-dtree.fit(x_train, y_train)
-dtree_pred = dtree.predict(x_test)
-
-# classes are imbalanced so f1 is better 
-dtree_f1 = f1_score(y_test, dtree_pred, average='weighted')
-dtree_cm = confusion_matrix(y_test, dtree_pred)
+### models, balanced class weights & using f1 score as metric
 
 
 ### random forest 
-rf = RandomForestClassifier()
+rf = RandomForestClassifier(class_weight = 'balanced', random_state = 0)
 rf.fit(x_train, y_train)
 rf_pred = rf.predict(x_test)
 
 rf_f1 = f1_score(y_test, rf_pred, average = 'weighted')
 rf_cm = confusion_matrix(y_test, rf_pred)
+
 
 # feature improtance 
 importances = pd.Series(rf.feature_importances_, index = x.columns)
@@ -262,7 +241,7 @@ plt.show()
 
 
 ### support vector machine
-svm = SGDClassifier(loss = 'hinge', random_state = 0)
+svm = SGDClassifier(loss = 'hinge', random_state = 0, class_weight = 'balanced')
 svm.fit(x_train, y_train)
 svm_pred = svm.predict(x_test)
 
@@ -271,7 +250,7 @@ svm_cm = confusion_matrix(y_test, svm_pred)
 
 
 ### k nearest neighbour
-knn = KNeighborsClassifier(n_neighbors = 5)
+knn = KNeighborsClassifier(n_neighbors = 5, weights = 'distance')
 knn.fit(x_train, y_train)
 knn_pred = knn.predict(x_test)
 
@@ -280,8 +259,10 @@ knn_cm = confusion_matrix(y_test, knn_pred)
 
 
 ### naive bayes 
+# does not have class weights, so using sample balanced weights
+sample_weights = compute_sample_weight('balanced', y_train)
 nb = GaussianNB()
-nb.fit(x_train, y_train)
+nb.fit(x_train, y_train, sample_weight = sample_weights)
 nb_pred = nb.predict(x_test)
 
 nb_f1 = f1_score(y_test, nb_pred, average = 'weighted')
@@ -295,26 +276,30 @@ nb_cm = confusion_matrix(y_test, nb_pred)
 ### modeling results
 
 ### printing out f1 score
-print(f"Decision Tree F1: {dtree_f1:.4f}")
 print(f"Random Forest F1: {rf_f1:.4f}")
 print(f"SVM F1:           {svm_f1:.4f}")
 print(f"KNN F1:           {knn_f1:.4f}")
 print(f"Naive Bayes F1:   {nb_f1:.4f}")
 
-# Decision Tree F1: 0.4728
-# Random Forest F1: 0.7106
-# SVM F1:           0.5123
-# KNN F1:           0.6601
-# Naive Bayes F1:   0.5711
+
+# Random Forest F1: 0.7178
+# SVM F1:           0.5124
+# KNN F1:           0.6641
+# Naive Bayes F1:   0.5782
+
+# after balancing classes and using weighted f1 score
+# Random Forest F1: 0.7160
+# SVM F1:           0.5740
+# KNN F1:           0.6660
+# Naive Bayes F1:   0.6008
 
 
 ### confusion matrices
-### combined confusion matrices
-fig, axes = plt.subplots(2, 3, figsize=(15, 9))
+fig, axes = plt.subplots(2, 2, figsize=(15, 9))
 axes = axes.flatten()
 
-cms = [dtree_cm, rf_cm, svm_cm, knn_cm, nb_cm]
-titles = ['Decision Tree', 'Random Forest', 'SVM', 'KNN', 'Naive Bayes']
+cms = [rf_cm, svm_cm, knn_cm, nb_cm]
+titles = ['Random Forest', 'SVM', 'KNN', 'Naive Bayes']
 
 for ax, cm, title in zip(axes, cms, titles):
     sns.heatmap(cm, annot = True, cmap = 'Blues', fmt = 'd', ax = ax,
@@ -323,8 +308,6 @@ for ax, cm, title in zip(axes, cms, titles):
     ax.set_title(title)
     ax.set_xlabel('Predicted')
     ax.set_ylabel('Actual')
-
-axes[5].set_visible(False)
 
 plt.tight_layout()
 plt.show()
