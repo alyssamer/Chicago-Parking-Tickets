@@ -57,22 +57,24 @@ SET zipcode = NULL
 WHERE zipcode = '000000000' OR zipcode !~ '[0-9]';
 
 
-
+--- repeat offenders ---
+SELECT license_plate_number, COUNT(*) as ticket_count
+FROM tickets
+GROUP BY license_plate_number
+ORDER BY ticket_count DESC
+LIMIT 20;
 
 
 
 --------------------------------
 --- sample for modeling ---
 --- 7% ---
-
 CREATE TABLE tickets_sample AS
-SELECT target, ticket_queue, violation_description, zipcode,
-                license_plate_state, vehicle_make, fine_level1_amount, fine_level2_amount,
-                hour, month, year, notice_level, community_area_name
+SELECT *
 FROM tickets
-WHERE year BETWEEN 2000 AND 2018 
-AND ticket_queue != 'Hearing Req' AND RANDOM() < 0.07;
-
+WHERE year BETWEEN 2000 AND 2018
+AND ticket_queue != 'Hearing Req'
+AND RANDOM() < 0.07;
 
 
 --------------------------------
