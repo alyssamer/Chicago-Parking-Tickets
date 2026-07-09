@@ -65,12 +65,13 @@ ORDER BY ticket_count DESC
 LIMIT 20;
 
 
-
 --------------------------------
 --- sample for modeling ---
 --- 7% ---
 CREATE TABLE tickets_sample AS
-SELECT *
+SELECT target, ticket_queue, violation_description, zipcode, license_plate_state, vehicle_make,
+		fine_level1_amount, fine_level2_amount, notice_level, year, month, hour,
+		community_area_name
 FROM tickets
 WHERE year BETWEEN 2000 AND 2018
 AND ticket_queue != 'Hearing Req'

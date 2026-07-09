@@ -231,7 +231,7 @@ rf_f1 = f1_score(y_test, rf_pred, average = 'weighted')
 rf_cm = confusion_matrix(y_test, rf_pred)
 
 
-# feature improtance 
+# feature importance 
 importances = pd.Series(rf.feature_importances_, index = x.columns)
 importances.sort_values().plot(kind = 'barh', figsize = (8,6))
 plt.title('Random Forest Feature Importance')

@@ -28,7 +28,7 @@ Naive Bayes F1: 0.6008
 - Additional fines did not significantly increase payment rates for unpaid tickets
 - Random Forest achieved the best F1 score of 0.71, but plateaued there even with additional data and accounting for class imbalance, 
   suggesting strong predictors outside of the data set effected payment status
-- Tableau -> tba
+- Tableau -> [Dashboard](https://public.tableau.com/views/ticketsdashboard/Tickets?:language=en-US&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link)
 
 
 ## Files
